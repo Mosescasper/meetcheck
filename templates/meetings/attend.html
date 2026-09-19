@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Check In — {{ meeting.title }}{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1 class="auth-title">{{ meeting.title }}</h1>
+    {% if meeting.scheduled_for %}
+    <p class="auth-sub">{{ meeting.scheduled_for.strftime('%d %b %Y, %H:%M') }}</p>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}"><span>{{ message }}</span></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if not meeting.is_open %}
+    <div class="flash danger"><span>This meeting is no longer accepting attendance.</span></div>
+    {% else %}
+    <form method="POST">
+      <div class="form-group">
+        <label for="name">Full Name *</label>
+        <input type="text" id="name" name="name" class="form-control" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="id_number">ID / Staff No. (optional)</label>
+        <input type="text" id="id_number" name="id_number" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="department">Department (optional)</label>
+        <input type="text" id="department" name="department" class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+        Mark Me Present
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

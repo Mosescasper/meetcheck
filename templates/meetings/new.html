@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}New Meeting{% endblock %}
+{% block page_title %}New Meeting{% endblock %}
+{% block page_actions %}
+<a href="{{ url_for('meeting_list') }}" class="btn">Back to Meetings</a>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:600px;">
+  <form method="POST" action="{{ url_for('meeting_new') }}">
+    <div class="form-group">
+      <label for="title">Meeting Title</label>
+      <input type="text" id="title" name="title" class="form-control" required
+             placeholder="e.g. Weekly Pharmacy Team Meeting">
+    </div>
+
+    <div class="form-group">
+      <label for="scheduled_for">Date &amp; Time (optional)</label>
+      <input type="datetime-local" id="scheduled_for" name="scheduled_for" class="form-control">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description (optional)</label>
+      <textarea id="description" name="description" class="form-control" rows="3"
+                placeholder="Agenda, location, notes..."></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create Meeting</button>
+      <a href="{{ url_for('meeting_list') }}" class="btn">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

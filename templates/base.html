@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ org_name }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08080b; --panel:#101014; --panel-alt:#0c0c10; --border:#1f1f26;
+    --text:#f2f2f5; --text-muted:#8a8a95; --mono:'JetBrains Mono',monospace;
+    --sans:'Inter',-apple-system,sans-serif; --cyan:#2dd4ee; --green:#2ee6a8;
+    --red:#ff3b5f; --orange:#ff9d3d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--sans);}
+  a{color:inherit;}
+  .app-shell{display:flex; min-height:100vh;}
+  .sidebar{
+    width:220px; flex-shrink:0; background:var(--panel-alt); border-right:1px solid var(--border);
+    padding:1.5rem 1rem; display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0;
+  }
+  .brand{display:flex; align-items:center; gap:.6rem; margin-bottom:2rem; padding:0 .35rem; font-weight:700; font-size:1.05rem;}
+  .brand-icon{width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),var(--green)); display:flex; align-items:center; justify-content:center;}
+  .nav-link{display:flex; align-items:center; gap:.6rem; padding:.55rem .75rem; border-radius:8px; color:var(--text-muted); text-decoration:none; font-size:.9rem; font-weight:500;}
+  .nav-link:hover{background:rgba(255,255,255,.05); color:var(--text);}
+  .nav-link.active{background:rgba(45,212,238,.08); color:var(--cyan);}
+  .sidebar-footer{margin-top:auto; border-top:1px solid var(--border); padding-top:.75rem;}
+  .user-chip{font-size:.78rem; color:var(--text-muted); padding:0 .35rem; margin-bottom:.5rem;}
+  .main{margin-left:220px; flex:1; padding:2rem 2.5rem;}
+  .no-sidebar .main{margin-left:0; padding:0;}
+  .page-header{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1.5rem;}
+  .page-title{font-size:1.4rem; font-weight:700; margin:0;}
+  .page-actions{display:flex; gap:.6rem; flex-wrap:wrap;}
+  .flash{font-family:var(--mono); font-size:.85rem; padding:.7rem 1rem; border-radius:8px; margin-bottom:1rem; border:1px solid var(--border); background:var(--panel); display:flex; justify-content:space-between; gap:1rem;}
+  .flash.success{border-color:rgba(46,230,168,.35); color:var(--green);}
+  .flash.danger{border-color:rgba(255,59,95,.35); color:var(--red);}
+  .flash.info{border-color:rgba(45,212,238,.35); color:var(--cyan);}
+  .flash button{background:none; border:none; color:inherit; opacity:.6; cursor:pointer; font-size:1rem;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1.75rem;}
+  .table{width:100%; border-collapse:collapse; font-size:.88rem;}
+  .table th{text-align:left; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); padding:.5rem .75rem .6rem 0; border-bottom:1px solid var(--border);}
+  .table td{padding:.7rem .75rem .7rem 0; border-bottom:1px solid var(--border);}
+  .table tbody tr:last-child td{border-bottom:none;}
+  .empty-state{font-style:italic; color:var(--text-muted); text-align:center; padding:1.5rem 0;}
+  .btn{display:inline-flex; align-items:center; gap:.4rem; padding:.55rem .95rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.85rem; font-weight:600; text-decoration:none; cursor:pointer;}
+  .btn:hover{border-color:var(--cyan); background:rgba(45,212,238,.06);}
+  .btn-primary{background:var(--cyan); color:#08080b; border:none;}
+  .btn-danger{background:var(--red); color:#08080b; border:none;}
+  .form-group{margin-bottom:1.1rem;}
+  .form-group label{display:block; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.4rem;}
+  .form-control{width:100%; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:.62rem .8rem; font-size:.9rem; font-family:var(--sans);}
+  .form-control:focus{outline:none; border-color:var(--cyan);}
+  .form-hint{font-size:.78rem; color:var(--text-muted); margin-top:-.6rem; margin-bottom:.9rem;}
+  .form-actions{display:flex; gap:.75rem; margin-top:1.5rem;}
+  .badge{display:inline-flex; align-items:center; font-family:var(--mono); font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; padding:.2rem .55rem; border-radius:100px; border:1px solid currentColor;}
+  .badge-success{color:var(--green);} .badge-danger{color:var(--red);}
+  .auth-wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem 1.25rem;
+    background: radial-gradient(circle at 15% 10%, rgba(45,212,238,.08), transparent 40%), var(--bg);}
+  .auth-card{width:100%; max-width:400px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:2rem 1.9rem;}
+  .auth-title{font-size:1.35rem; font-weight:700; margin:0 0 .3rem;}
+  .auth-sub{color:var(--text-muted); font-size:.85rem; margin:0 0 1.5rem;}
+  .auth-switch{text-align:center; font-size:.85rem; color:var(--text-muted); margin-top:1.2rem;}
+  .auth-switch a{color:var(--cyan); font-weight:600; text-decoration:none;}
+  code{background:var(--panel-alt); padding:.2rem .4rem; border-radius:5px; font-family:var(--mono); font-size:.85rem;}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{{ '' if current_user.is_authenticated else 'no-sidebar' }}">
+<div class="app-shell">
+  {% if current_user.is_authenticated %}
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">✅</div> {{ org_name }}</div>
+    <nav style="display:flex; flex-direction:column; gap:.15rem; flex:1;">
+      <a class="nav-link {{ 'active' if request.endpoint and 'meeting' in request.endpoint else '' }}" href="{{ url_for('meeting_list') }}">📋 Meetings</a>
+      <a class="nav-link" href="{{ url_for('meeting_new') }}">➕ New Meeting</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">{{ current_user.name }}</div>
+      <a class="nav-link" href="{{ url_for('logout') }}">🚪 Logout</a>
+    </div>
+  </aside>
+  {% endif %}
+  <div class="main">
+    {% if current_user.is_authenticated %}
+    <div class="page-header">
+      <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      <div class="page-actions">{% block page_actions %}{% endblock %}</div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}"><span>{{ message }}</span><button onclick="this.parentElement.remove()">&times;</button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

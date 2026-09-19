@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Meetings{% endblock %}
+{% block page_title %}Meetings{% endblock %}
+{% block page_actions %}
+<a href="{{ url_for('meeting_new') }}" class="btn btn-primary">+ New Meeting</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Scheduled For</th>
+        <th>Status</th>
+        <th>Attendees</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in meetings %}
+      <tr>
+        <td><a href="{{ url_for('meeting_detail', meeting_id=m.id) }}">{{ m.title }}</a></td>
+        <td>{{ m.scheduled_for.strftime('%d %b %Y, %H:%M') if m.scheduled_for else "—" }}</td>
+        <td>
+          {% if m.is_open %}
+          <span class="badge badge-success">Open</span>
+          {% else %}
+          <span class="badge badge-danger">Closed</span>
+          {% endif %}
+        </td>
+        <td>{{ m.attendee_count }}</td>
+        <td><a href="{{ url_for('meeting_detail', meeting_id=m.id) }}" class="btn">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-state">No meetings yet — create your first one.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

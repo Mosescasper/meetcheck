@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Checked In{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card" style="text-align:center;">
+    <div style="font-size:2.5rem; margin-bottom:.5rem;">✅</div>
+    <h1 class="auth-title">You're checked in, {{ name }}!</h1>
+    <p class="auth-sub">Your attendance for <strong>{{ meeting.title }}</strong> has been recorded.</p>
+  </div>
+</div>
+{% endblock %}
