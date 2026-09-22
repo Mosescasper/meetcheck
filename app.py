@@ -132,12 +132,14 @@ def home():
 @app.route("/meetings")
 @login_required
 def meeting_list():
-    meetings = (
-        Meeting.query.filter_by(organizer_id=current_user.id)
-        .order_by(Meeting.created_at.desc())
-        .all()
-    )
-    return render_template("meetings/list.html", meetings=meetings)
+    search = request.args.get("q", "").strip()
+
+    query = Meeting.query.filter_by(organizer_id=current_user.id)
+    if search:
+        query = query.filter(Meeting.title.ilike(f"%{search}%"))
+
+    meetings = query.order_by(Meeting.created_at.desc()).all()
+    return render_template("meetings/list.html", meetings=meetings, search=search)
 
 
 @app.route("/meetings/new", methods=["GET", "POST"])
@@ -187,6 +189,38 @@ def meeting_detail(meeting_id):
     meeting = _get_owned_meeting(meeting_id)
     attend_url = f"{_public_base_url()}/attend/{meeting.code}"
     return render_template("meetings/detail.html", meeting=meeting, attend_url=attend_url)
+
+
+@app.route("/meetings/<int:meeting_id>/edit", methods=["GET", "POST"])
+@login_required
+def meeting_edit(meeting_id):
+    meeting = _get_owned_meeting(meeting_id)
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        scheduled_for_str = request.form.get("scheduled_for", "").strip()
+
+        if not title:
+            flash("Meeting title is required.", "danger")
+            return render_template("meetings/edit.html", meeting=meeting)
+
+        scheduled_for_val = None
+        if scheduled_for_str:
+            try:
+                scheduled_for_val = datetime.strptime(scheduled_for_str, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                pass
+
+        meeting.title = title
+        meeting.description = description or None
+        meeting.scheduled_for = scheduled_for_val
+        db.session.commit()
+
+        flash(f"Meeting '{meeting.title}' updated.", "success")
+        return redirect(url_for("meeting_detail", meeting_id=meeting.id))
+
+    return render_template("meetings/edit.html", meeting=meeting)
 
 
 @app.route("/meetings/<int:meeting_id>/qr.png")

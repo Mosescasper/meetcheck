@@ -6,6 +6,17 @@
 {% endblock %}
 
 {% block content %}
+<div class="card" style="margin-bottom:1rem;">
+  <form method="GET" action="{{ url_for('meeting_list') }}" style="display:flex; gap:.6rem;">
+    <input type="text" name="q" class="form-control" placeholder="Search meetings by title..."
+           value="{{ search }}" style="flex:1;">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search %}
+    <a href="{{ url_for('meeting_list') }}" class="btn">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
 <div class="card">
   <table class="table">
     <thead>
@@ -30,10 +41,15 @@
           {% endif %}
         </td>
         <td>{{ m.attendee_count }}</td>
-        <td><a href="{{ url_for('meeting_detail', meeting_id=m.id) }}" class="btn">View</a></td>
+        <td style="display:flex; gap:.5rem;">
+          <a href="{{ url_for('meeting_detail', meeting_id=m.id) }}" class="btn">View</a>
+          <a href="{{ url_for('meeting_edit', meeting_id=m.id) }}" class="btn">Edit</a>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="5" class="empty-state">No meetings yet — create your first one.</td></tr>
+      <tr><td colspan="5" class="empty-state">
+        {% if search %}No meetings match "{{ search }}".{% else %}No meetings yet — create your first one.{% endif %}
+      </td></tr>
       {% endfor %}
     </tbody>
   </table>
