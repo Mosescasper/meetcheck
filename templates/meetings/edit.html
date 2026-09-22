@@ -2,41 +2,6 @@
 {% block title %}Edit Meeting{% endblock %}
 {% block page_title %}Edit Meeting{% endblock %}
 {% block page_actions %}
-<a href="{{ url_for('meeting_detail', meeting_id=meeting.id) }}" class="btn">Back to Meeting</a>
-{% endblock %}
-
-{% block content %}
-<div class="card" style="max-width:600px;">
-  <form method="POST" action="{{ url_for('meeting_edit', meeting_id=meeting.id) }}">
-    <div class="form-group">
-      <label for="title">Meeting Title</label>
-      <input type="text" id="title" name="title" class="form-control" required
-             placeholder="e.g. Weekly Pharmacy Team Meeting" value="{{ meeting.title }}">
-    </div>
-
-    <div class="form-group">
-      <label for="scheduled_for">Date &amp; Time (optional)</label>
-      <input type="datetime-local" id="scheduled_for" name="scheduled_for" class="form-control"
-             value="{{ meeting.scheduled_for.strftime('%Y-%m-%dT%H:%M') if meeting.scheduled_for else '' }}">
-    </div>
-
-    <div class="form-group">
-      <label for="description">Description (optional)</label>
-      <textarea id="description" name="description" class="form-control" rows="3"
-                placeholder="Agenda, location, notes...">{{ meeting.description or '' }}</textarea>
-    </div>
-
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Update Meeting</button>
-      <a href="{{ url_for('meeting_detail', meeting_id=meeting.id) }}" class="btn">Cancel</a>
-    </div>
-  </form>
-</div>
-{% endblock %}
-{% extends "base.html" %}
-{% block title %}Edit Meeting{% endblock %}
-{% block page_title %}Edit Meeting{% endblock %}
-{% block page_actions %}
 <a href="{{ url_for('meeting_detail', meeting_id=meeting.id) }}" class="btn">Cancel</a>
 {% endblock %}
 
