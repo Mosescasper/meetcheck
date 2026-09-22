@@ -2,10 +2,14 @@
 {% block title %}Check In — {{ meeting.title }}{% endblock %}
 {% block content %}
 <div class="auth-wrap">
-  <div class="auth-card">
+  <div class="auth-card" style="max-width:520px;">
     <h1 class="auth-title">{{ meeting.title }}</h1>
     {% if meeting.scheduled_for %}
     <p class="auth-sub">{{ meeting.scheduled_for.strftime('%d %b %Y, %H:%M') }}</p>
+    {% endif %}
+
+    {% if meeting.geofence_enabled %}
+    <div class="flash info" style="margin-bottom:1rem;"><span>This meeting requires you to be within {{ meeting.geofence_radius_m }}m of the meeting location.</span></div>
     {% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -19,19 +23,55 @@
     {% if not meeting.is_open %}
     <div class="flash danger"><span>This meeting is no longer accepting attendance.</span></div>
     {% else %}
-    <form method="POST">
+    <form method="POST" id="attend-form">
       <div class="form-group">
-        <label for="name">Full Name *</label>
-        <input type="text" id="name" name="name" class="form-control" required autofocus>
+        <label for="first_name">First Name *</label>
+        <input type="text" id="first_name" name="first_name" class="form-control" required autofocus>
       </div>
+
+      <div class="form-group">
+        <label for="surname">Surname *</label>
+        <input type="text" id="surname" name="surname" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input type="email" id="email" name="email" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="designation">Designation *</label>
+        <input type="text" id="designation" name="designation" class="form-control" required
+               placeholder="e.g. Pharmacist, Nurse, Clerk">
+      </div>
+
+      <div class="form-group">
+        <label for="department">Department *</label>
+        <input type="text" id="department" name="department" class="form-control" required>
+      </div>
+
       <div class="form-group">
         <label for="id_number">ID / Staff No. (optional)</label>
         <input type="text" id="id_number" name="id_number" class="form-control">
       </div>
+
+      {% if meeting.geofence_enabled %}
+      <input type="hidden" id="latitude" name="latitude">
+      <input type="hidden" id="longitude" name="longitude">
+      {% endif %}
+
       <div class="form-group">
-        <label for="department">Department (optional)</label>
-        <input type="text" id="department" name="department" class="form-control">
+        <label>Signature *</label>
+        <div style="border:1px solid var(--border); border-radius:8px; background:#fff; touch-action:none;">
+          <canvas id="signature-pad" width="400" height="150" style="width:100%; height:150px; display:block; cursor:crosshair;"></canvas>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.4rem;">
+          <span id="signature-hint" style="font-size:.78rem; color:var(--text-muted);">Sign above using your mouse or finger</span>
+          <button type="button" id="clear-signature" class="btn" style="padding:.3rem .7rem; font-size:.8rem;">Clear</button>
+        </div>
+        <input type="hidden" id="signature" name="signature" required>
       </div>
+
       <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
         Mark Me Present
       </button>
@@ -39,4 +79,102 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+(function () {
+  var canvas = document.getElementById("signature-pad");
+  if (!canvas) return;
+
+  var ctx = canvas.getContext("2d");
+  var hint = document.getElementById("signature-hint");
+  var hiddenInput = document.getElementById("signature");
+  var latitudeInput = document.getElementById("latitude");
+  var longitudeInput = document.getElementById("longitude");
+  var form = document.getElementById("attend-form");
+  var drawing = false;
+  var hasSignature = false;
+
+  function resizeCanvas() {
+    var ratio = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+  }
+  resizeCanvas();
+
+  function getPos(e) {
+    var rect = canvas.getBoundingClientRect();
+    var point = e.touches ? e.touches[0] : e;
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    drawing = true;
+    hasSignature = true;
+    var p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    var p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+
+  function end() {
+    drawing = false;
+  }
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", end);
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end);
+
+  document.getElementById("clear-signature").addEventListener("click", function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSignature = false;
+  });
+
+  form.addEventListener("submit", function (e) {
+    if (!hasSignature) {
+      e.preventDefault();
+      hint.textContent = "Please sign before submitting.";
+      hint.style.color = "#e05555";
+      canvas.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    hiddenInput.value = canvas.toDataURL("image/png");
+
+    if (latitudeInput && longitudeInput) {
+      e.preventDefault();
+      if (!navigator.geolocation) {
+        alert("This meeting requires location access, but your browser does not support it.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          latitudeInput.value = pos.coords.latitude;
+          longitudeInput.value = pos.coords.longitude;
+          form.submit();
+        },
+        function () {
+          alert("This meeting requires your current location to check in. Please allow location access and try again.");
+        }
+      );
+    }
+  });
+})();
+</script>
 {% endblock %}

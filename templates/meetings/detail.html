@@ -28,6 +28,10 @@
       <span class="badge badge-danger" style="justify-content:center;">Closed</span>
       {% endif %}
 
+      {% if meeting.geofence_enabled %}
+      <div class="flash info"><span>Geofence enabled: within {{ meeting.geofence_radius_m }}m of {{ meeting.geofence_lat }}, {{ meeting.geofence_lng }}</span></div>
+      {% endif %}
+
       <form method="POST" action="{{ url_for('meeting_toggle', meeting_id=meeting.id) }}">
         <button type="submit" class="btn" style="width:100%; justify-content:center;">
           {{ "Close Meeting" if meeting.is_open else "Reopen Meeting" }}
@@ -54,21 +58,27 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>ID / Staff No.</th>
+          <th>Email</th>
+          <th>Designation</th>
           <th>Department</th>
+          <th>ID / Staff No.</th>
+          <th>Signature</th>
           <th>Signed In At</th>
         </tr>
       </thead>
       <tbody>
         {% for r in meeting.attendance_records %}
         <tr>
-          <td>{{ r.name }}</td>
+          <td>{{ r.full_name }}</td>
+          <td>{{ r.email }}</td>
+          <td>{{ r.designation }}</td>
+          <td>{{ r.department }}</td>
           <td>{{ r.id_number or "—" }}</td>
-          <td>{{ r.department or "—" }}</td>
+          <td><img src="{{ r.signature }}" alt="Signature" style="height:32px; background:#fff; border-radius:4px;"></td>
           <td>{{ r.signed_in_at.strftime('%d %b %Y, %H:%M:%S') if r.signed_in_at else "—" }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="empty-state">No one has checked in yet.</td></tr>
+        <tr><td colspan="7" class="empty-state">No one has checked in yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

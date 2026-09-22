@@ -2,11 +2,11 @@
 {% block title %}Edit Meeting{% endblock %}
 {% block page_title %}Edit Meeting{% endblock %}
 {% block page_actions %}
-<a href="{{ url_for('meeting_detail', meeting_id=meeting.id) }}" class="btn">Cancel</a>
+<a href="{{ url_for('meeting_detail', meeting_id=meeting.id) }}" class="btn">Back to Meeting</a>
 {% endblock %}
 
 {% block content %}
-<div class="card" style="max-width:600px;">
+<div class="card" style="max-width:700px;">
   <form method="POST" action="{{ url_for('meeting_edit', meeting_id=meeting.id) }}">
     <div class="form-group">
       <label for="title">Meeting Title</label>
@@ -25,6 +25,8 @@
       <textarea id="description" name="description" class="form-control" rows="3"
                 placeholder="Agenda, location, notes...">{{ meeting.description or '' }}</textarea>
     </div>
+
+    {% include "meetings/_geofence_fields.html" %}
 
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Save Changes</button>

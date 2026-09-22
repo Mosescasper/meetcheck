@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="card" style="max-width:600px;">
+<div class="card" style="max-width:700px;">
   <form method="POST" action="{{ url_for('meeting_new') }}">
     <div class="form-group">
       <label for="title">Meeting Title</label>
@@ -24,6 +24,8 @@
       <textarea id="description" name="description" class="form-control" rows="3"
                 placeholder="Agenda, location, notes..."></textarea>
     </div>
+
+    {% include "meetings/_geofence_fields.html" %}
 
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Create Meeting</button>

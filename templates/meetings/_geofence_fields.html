@@ -1,0 +1,85 @@
+{# Shared geofence fields, included from meetings/new.html and meetings/edit.html.
+   Expects an optional `meeting` variable (present on edit, absent on new). #}
+<div class="form-group" style="border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem;">
+  <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+    <input type="checkbox" id="geofence_enabled" name="geofence_enabled"
+           {% if meeting and meeting.geofence_enabled %}checked{% endif %}
+           style="width:auto;">
+    Restrict check-in to attendees near this location (geofence)
+  </label>
+</div>
+
+<div id="geofence-fields" style="display:none; margin-bottom:1rem;">
+  <div style="display:flex; gap:.6rem; margin-bottom:.6rem; flex-wrap:wrap;">
+    <button type="button" id="use-my-location" class="btn" style="font-size:.82rem;">Use my current location</button>
+    <button type="button" id="use-mkrh-location" class="btn" style="font-size:.82rem;">Use MKRH default</button>
+  </div>
+
+  <div class="form-group">
+    <label for="geofence_radius_m">Allowed radius (metres)</label>
+    <input type="number" id="geofence_radius_m" name="geofence_radius_m" class="form-control" min="10"
+           value="{{ meeting.geofence_radius_m if meeting and meeting.geofence_radius_m else 150 }}">
+  </div>
+
+  <input type="hidden" id="geofence_lat" name="geofence_lat"
+         value="{{ meeting.geofence_lat if meeting and meeting.geofence_lat is not none else '' }}">
+  <input type="hidden" id="geofence_lng" name="geofence_lng"
+         value="{{ meeting.geofence_lng if meeting and meeting.geofence_lng is not none else '' }}">
+
+  <p id="geofence-status" style="font-size:.8rem; color:var(--text-muted); margin:.3rem 0 0;">
+    {% if meeting and meeting.geofence_lat is not none %}
+      Location set: {{ "%.5f"|format(meeting.geofence_lat) }}, {{ "%.5f"|format(meeting.geofence_lng) }}
+    {% else %}
+      No location set yet.
+    {% endif %}
+  </p>
+</div>
+
+<script>
+(function () {
+  var checkbox = document.getElementById("geofence_enabled");
+  var fields = document.getElementById("geofence-fields");
+  var latInput = document.getElementById("geofence_lat");
+  var lngInput = document.getElementById("geofence_lng");
+  var status = document.getElementById("geofence-status");
+
+  // MKRH (Othaya, Nyeri County) approximate coordinates.
+  var MKRH_LAT = -0.542176;
+  var MKRH_LNG = 36.9415116;
+
+  function toggleFields() {
+    fields.style.display = checkbox.checked ? "block" : "none";
+  }
+  checkbox.addEventListener("change", toggleFields);
+  toggleFields();
+
+  function setLocation(lat, lng, label) {
+    latInput.value = lat;
+    lngInput.value = lng;
+    status.textContent = label + ": " + lat.toFixed(5) + ", " + lng.toFixed(5);
+    status.style.color = "var(--text-muted)";
+  }
+
+  document.getElementById("use-my-location").addEventListener("click", function () {
+    if (!navigator.geolocation) {
+      status.textContent = "Your browser doesn't support location access.";
+      status.style.color = "#e05555";
+      return;
+    }
+    status.textContent = "Getting your current location...";
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        setLocation(pos.coords.latitude, pos.coords.longitude, "Location set from your device");
+      },
+      function () {
+        status.textContent = "Couldn't get your location -- check browser permissions, or use the MKRH default.";
+        status.style.color = "#e05555";
+      }
+    );
+  });
+
+  document.getElementById("use-mkrh-location").addEventListener("click", function () {
+    setLocation(MKRH_LAT, MKRH_LNG, "Location set to MKRH default");
+  });
+})();
+</script>

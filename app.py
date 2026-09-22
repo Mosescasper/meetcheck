@@ -1,5 +1,6 @@
 import csv
 import io
+import math
 from datetime import datetime
 from functools import wraps
 
@@ -44,6 +45,43 @@ def _public_base_url():
     router/port-forward); fall back to whatever Flask sees the request
     host as."""
     return Config.PUBLIC_BASE_URL.rstrip("/") if Config.PUBLIC_BASE_URL else request.host_url.rstrip("/")
+
+
+def _distance_meters(lat1, lng1, lat2, lng2):
+    """Great-circle distance between two lat/lng points, in metres."""
+    r = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def _parse_geofence_form(form):
+    """Shared by meeting_new/meeting_edit: reads the geofence fields out of
+    a submitted form and returns (enabled, lat, lng, radius_m) or raises
+    ValueError with a user-facing message if the input doesn't make sense."""
+    enabled = form.get("geofence_enabled") == "on"
+    lat_str = form.get("geofence_lat", "").strip()
+    lng_str = form.get("geofence_lng", "").strip()
+    radius_str = form.get("geofence_radius_m", "").strip()
+
+    if not enabled:
+        return False, None, None, 150
+
+    if not lat_str or not lng_str:
+        raise ValueError("Set a location (use 'Use my current location' or 'Use MKRH default') to enable the geofence.")
+
+    try:
+        lat, lng = float(lat_str), float(lng_str)
+        radius = int(radius_str) if radius_str else 150
+    except ValueError:
+        raise ValueError("Location/radius values were invalid.")
+
+    if radius < 10:
+        radius = 10
+
+    return True, lat, lng, radius
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +192,12 @@ def meeting_new():
             flash("Meeting title is required.", "danger")
             return render_template("meetings/new.html")
 
+        try:
+            geofence_enabled, geofence_lat, geofence_lng, geofence_radius_m = _parse_geofence_form(request.form)
+        except ValueError as e:
+            flash(str(e), "danger")
+            return render_template("meetings/new.html")
+
         scheduled_for_val = None
         if scheduled_for_str:
             try:
@@ -166,6 +210,10 @@ def meeting_new():
             description=description or None,
             scheduled_for=scheduled_for_val,
             organizer_id=current_user.id,
+            geofence_enabled=geofence_enabled,
+            geofence_lat=geofence_lat,
+            geofence_lng=geofence_lng,
+            geofence_radius_m=geofence_radius_m,
         )
         db.session.add(meeting)
         db.session.commit()
@@ -205,6 +253,12 @@ def meeting_edit(meeting_id):
             flash("Meeting title is required.", "danger")
             return render_template("meetings/edit.html", meeting=meeting)
 
+        try:
+            geofence_enabled, geofence_lat, geofence_lng, geofence_radius_m = _parse_geofence_form(request.form)
+        except ValueError as e:
+            flash(str(e), "danger")
+            return render_template("meetings/edit.html", meeting=meeting)
+
         scheduled_for_val = None
         if scheduled_for_str:
             try:
@@ -215,6 +269,10 @@ def meeting_edit(meeting_id):
         meeting.title = title
         meeting.description = description or None
         meeting.scheduled_for = scheduled_for_val
+        meeting.geofence_enabled = geofence_enabled
+        meeting.geofence_lat = geofence_lat
+        meeting.geofence_lng = geofence_lng
+        meeting.geofence_radius_m = geofence_radius_m
         db.session.commit()
 
         flash(f"Meeting '{meeting.title}' updated.", "success")
@@ -263,10 +321,11 @@ def meeting_export(meeting_id):
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "ID Number", "Department", "Signed In At"])
+    writer.writerow(["First Name", "Surname", "Email", "Designation", "Department", "ID / Staff No.", "Signed In At"])
     for r in meeting.attendance_records:
         writer.writerow([
-            r.name, r.id_number or "", r.department or "",
+            r.first_name, r.surname, r.email, r.designation, r.department,
+            r.id_number or "",
             r.signed_in_at.strftime("%Y-%m-%d %H:%M:%S") if r.signed_in_at else "",
         ])
 
@@ -294,25 +353,60 @@ def attend(code):
             flash("This meeting is no longer accepting attendance.", "danger")
             return render_template("meetings/attend.html", meeting=meeting)
 
-        name = request.form.get("name", "").strip()
-        id_number = request.form.get("id_number", "").strip()
+        first_name = request.form.get("first_name", "").strip()
+        surname = request.form.get("surname", "").strip()
+        email = request.form.get("email", "").strip()
+        designation = request.form.get("designation", "").strip()
         department = request.form.get("department", "").strip()
+        id_number = request.form.get("id_number", "").strip()
+        signature = request.form.get("signature", "").strip()
+        lat_str = request.form.get("latitude", "").strip()
+        lng_str = request.form.get("longitude", "").strip()
 
-        if not name:
-            flash("Please enter your name.", "danger")
+        missing = not all([first_name, surname, email, designation, department, signature])
+        if missing:
+            flash("First name, surname, email, designation, department, and signature are all required.", "danger")
             return render_template("meetings/attend.html", meeting=meeting)
+
+        latitude = longitude = None
+        if lat_str and lng_str:
+            try:
+                latitude, longitude = float(lat_str), float(lng_str)
+            except ValueError:
+                latitude = longitude = None
+
+        if meeting.geofence_enabled:
+            if latitude is None or longitude is None:
+                flash("This meeting requires location access to check in. Please allow location access and try again.", "danger")
+                return render_template("meetings/attend.html", meeting=meeting)
+
+            distance = _distance_meters(latitude, longitude, meeting.geofence_lat, meeting.geofence_lng)
+            if distance > meeting.geofence_radius_m:
+                flash(
+                    f"You're about {int(distance)}m from the meeting location "
+                    f"(must be within {meeting.geofence_radius_m}m to check in). "
+                    "Please move closer and try again.",
+                    "danger",
+                )
+                return render_template("meetings/attend.html", meeting=meeting)
 
         record = AttendanceRecord(
             meeting_id=meeting.id,
-            name=name,
+            first_name=first_name,
+            surname=surname,
+            email=email,
+            designation=designation,
+            department=department,
             id_number=id_number or None,
-            department=department or None,
+            signature=signature,
+            latitude=latitude,
+            longitude=longitude,
             ip_address=request.remote_addr,
         )
         db.session.add(record)
         db.session.commit()
 
-        return render_template("meetings/attend_success.html", meeting=meeting, name=name)
+        return render_template("meetings/attend_success.html", meeting=meeting, name=first_name)
 
     return render_template("meetings/attend.html", meeting=meeting)
 

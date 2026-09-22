@@ -47,6 +47,13 @@ class Meeting(db.Model):
     organizer_id = db.Column(db.Integer, db.ForeignKey("organizers.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Optional geofence: when enabled, attendees must be within
+    # geofence_radius_m metres of (geofence_lat, geofence_lng) to check in.
+    geofence_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    geofence_lat = db.Column(db.Float)
+    geofence_lng = db.Column(db.Float)
+    geofence_radius_m = db.Column(db.Integer, nullable=False, default=150)
+
     organizer = db.relationship("Organizer", back_populates="meetings")
     attendance_records = db.relationship(
         "AttendanceRecord", back_populates="meeting",
@@ -66,13 +73,23 @@ class AttendanceRecord(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     meeting_id = db.Column(db.Integer, db.ForeignKey("meetings.id"), nullable=False)
-    name = db.Column(db.String(150), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    surname = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(150), nullable=False)
+    designation = db.Column(db.String(150), nullable=False)
+    department = db.Column(db.String(150), nullable=False)
     id_number = db.Column(db.String(50))
-    department = db.Column(db.String(150))
+    signature = db.Column(db.Text, nullable=False)  # base64 PNG data URL from the signature pad
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
     signed_in_at = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(50))
 
     meeting = db.relationship("Meeting", back_populates="attendance_records")
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.surname}"
+
     def __repr__(self):
-        return f"<AttendanceRecord {self.name} @ meeting={self.meeting_id}>"
+        return f"<AttendanceRecord {self.full_name} @ meeting={self.meeting_id}>"
