@@ -78,7 +78,7 @@ class AttendanceRecord(db.Model):
     email = db.Column(db.String(150), nullable=False)
     designation = db.Column(db.String(150), nullable=False)
     department = db.Column(db.String(150), nullable=False)
-    id_number = db.Column(db.String(50))
+    id_number = db.Column(db.String(50), nullable=False)
     signature = db.Column(db.Text, nullable=False)  # base64 PNG data URL from the signature pad
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)

@@ -363,9 +363,9 @@ def attend(code):
         lat_str = request.form.get("latitude", "").strip()
         lng_str = request.form.get("longitude", "").strip()
 
-        missing = not all([first_name, surname, email, designation, department, signature])
+        missing = not all([first_name, surname, email, designation, department, id_number, signature])
         if missing:
-            flash("First name, surname, email, designation, department, and signature are all required.", "danger")
+            flash("First name, surname, email, designation, department, ID / Staff No., and signature are all required.", "danger")
             return render_template("meetings/attend.html", meeting=meeting)
 
         latitude = longitude = None
@@ -397,7 +397,7 @@ def attend(code):
             email=email,
             designation=designation,
             department=department,
-            id_number=id_number or None,
+            id_number=id_number,
             signature=signature,
             latitude=latitude,
             longitude=longitude,
