@@ -1,0 +1,70 @@
+<div class="form-group">
+  <label>Custom Questions</label>
+  <div id="custom-question-list">
+    {% if meeting and meeting.questions %}
+      {% for q in meeting.questions %}
+      <div class="custom-question-row" style="display:flex; gap:.5rem; align-items:center; margin-bottom:.6rem;">
+        <input type="text" name="question_text[]" class="form-control" value="{{ q.question_text }}" placeholder="e.g. Which team are you from?">
+        <button type="button" class="btn remove-question" style="padding:.45rem .7rem;">Remove</button>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="custom-question-row" style="display:flex; gap:.5rem; align-items:center; margin-bottom:.6rem;">
+        <input type="text" name="question_text[]" class="form-control" placeholder="e.g. Which team are you from?">
+        <button type="button" class="btn remove-question" style="padding:.45rem .7rem;">Remove</button>
+      </div>
+    {% endif %}
+  </div>
+  <div style="margin-top:.5rem;">
+    <button type="button" id="add-question" class="btn">+ Add Question</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var container = document.getElementById('custom-question-list');
+  if (!container) return;
+
+  function makeQuestionRow(value) {
+    var row = document.createElement('div');
+    row.className = 'custom-question-row';
+    row.style.display = 'flex';
+    row.style.gap = '.5rem';
+    row.style.alignItems = 'center';
+    row.style.marginBottom = '.6rem';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'question_text[]';
+    input.className = 'form-control';
+    input.value = value || '';
+    input.placeholder = 'e.g. Which team are you from?';
+
+    var remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn remove-question';
+    remove.style.padding = '.45rem .7rem';
+    remove.textContent = 'Remove';
+
+    row.appendChild(input);
+    row.appendChild(remove);
+    return row;
+  }
+
+  var addButton = document.getElementById('add-question');
+  if (addButton) {
+    addButton.addEventListener('click', function () {
+      container.appendChild(makeQuestionRow(''));
+    });
+  }
+
+  container.addEventListener('click', function (event) {
+    var removeButton = event.target.closest('.remove-question');
+    if (!removeButton) return;
+    var row = removeButton.closest('.custom-question-row');
+    if (row && container.querySelectorAll('.custom-question-row').length > 1) {
+      row.remove();
+    }
+  });
+})();
+</script>

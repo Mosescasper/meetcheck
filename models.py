@@ -67,6 +67,12 @@ class Meeting(db.Model):
         "AttendanceRecord", back_populates="meeting",
         cascade="all, delete-orphan", order_by="AttendanceRecord.signed_in_at",
     )
+    # Custom questions the organizer typed in when setting up this meeting --
+    # answered by each attendee alongside the standard fields above.
+    questions = db.relationship(
+        "MeetingQuestion", back_populates="meeting",
+        cascade="all, delete-orphan", order_by="MeetingQuestion.position",
+    )
 
     @property
     def attendee_count(self):
@@ -74,6 +80,26 @@ class Meeting(db.Model):
 
     def __repr__(self):
         return f"<Meeting {self.title} ({self.code})>"
+
+
+class MeetingQuestion(db.Model):
+    """One custom question an organizer wants every attendee to answer at
+    check-in, e.g. 'Which project are you representing?' Free-text answers
+    only, kept intentionally simple."""
+    __tablename__ = "meeting_questions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    meeting_id = db.Column(db.Integer, db.ForeignKey("meetings.id"), nullable=False)
+    question_text = db.Column(db.String(300), nullable=False)
+    position = db.Column(db.Integer, nullable=False, default=0)
+
+    meeting = db.relationship("Meeting", back_populates="questions")
+    answers = db.relationship(
+        "AttendanceAnswer", back_populates="question", cascade="all, delete-orphan",
+    )
+
+    def __repr__(self):
+        return f"<MeetingQuestion {self.question_text!r} @ meeting={self.meeting_id}>"
 
 
 class AttendanceRecord(db.Model):
@@ -94,10 +120,37 @@ class AttendanceRecord(db.Model):
     ip_address = db.Column(db.String(50))
 
     meeting = db.relationship("Meeting", back_populates="attendance_records")
+    answers = db.relationship(
+        "AttendanceAnswer", back_populates="attendance_record", cascade="all, delete-orphan",
+    )
 
     @property
     def full_name(self):
         return f"{self.first_name} {self.surname}"
 
+    def answer_for(self, question_id):
+        """Convenience lookup used by the detail-page table: this record's
+        answer to a specific question, or None if unanswered."""
+        for a in self.answers:
+            if a.question_id == question_id:
+                return a.answer_text
+        return None
+
     def __repr__(self):
         return f"<AttendanceRecord {self.full_name} @ meeting={self.meeting_id}>"
+
+
+class AttendanceAnswer(db.Model):
+    """One attendee's answer to one of the meeting's custom questions."""
+    __tablename__ = "attendance_answers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    attendance_record_id = db.Column(db.Integer, db.ForeignKey("attendance_records.id"), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey("meeting_questions.id"), nullable=False)
+    answer_text = db.Column(db.Text)
+
+    attendance_record = db.relationship("AttendanceRecord", back_populates="answers")
+    question = db.relationship("MeetingQuestion", back_populates="answers")
+
+    def __repr__(self):
+        return f"<AttendanceAnswer q={self.question_id} record={self.attendance_record_id}>"

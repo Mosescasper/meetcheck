@@ -16,7 +16,7 @@ from flask_migrate import Migrate
 
 from config import Config
 from extensions import db, login_manager
-from models import Organizer, Meeting, AttendanceRecord
+from models import Organizer, Meeting, AttendanceRecord, MeetingQuestion, AttendanceAnswer
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -104,6 +104,26 @@ def _parse_optional_fields(form):
         "collect_id_number": form.get("collect_id_number") == "on",
         "collect_signature": form.get("collect_signature") == "on",
     }
+
+
+def _parse_questions_form(form):
+    """Reads the organizer's custom questions out of a submitted
+    meeting-create/edit form. Blank entries are dropped; order is kept as
+    typed. Returns a list of question-text strings."""
+    texts = form.getlist("question_text[]")
+    return [t.strip() for t in texts if t.strip()]
+
+
+def _apply_questions(meeting, question_texts):
+    """Replaces meeting.questions with a fresh set matching question_texts,
+    in order. On meeting_edit this means any previously-collected answers
+    to a REMOVED question are deleted along with it (cascade on
+    MeetingQuestion.answers) -- editing the question list is a real change
+    to the form, not just a relabeling."""
+    meeting.questions = [
+        MeetingQuestion(question_text=text, position=i)
+        for i, text in enumerate(question_texts)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -260,6 +280,7 @@ def meeting_new():
             return render_template("meetings/new.html")
 
         optional_fields = _parse_optional_fields(request.form)
+        question_texts = _parse_questions_form(request.form)
 
         scheduled_for_val = None
         if scheduled_for_str:
@@ -280,6 +301,10 @@ def meeting_new():
             **_parse_field_toggles(request.form),
         )
         db.session.add(meeting)
+        db.session.flush()  # assigns meeting.id before questions reference it
+
+        _apply_questions(meeting, question_texts)
+
         db.session.commit()
 
         flash(f"Meeting '{meeting.title}' created.", "success")
@@ -324,6 +349,7 @@ def meeting_edit(meeting_id):
             return render_template("meetings/edit.html", meeting=meeting)
 
         optional_fields = _parse_optional_fields(request.form)
+        question_texts = _parse_questions_form(request.form)
 
         scheduled_for_val = None
         if scheduled_for_str:
@@ -341,6 +367,9 @@ def meeting_edit(meeting_id):
         meeting.geofence_radius_m = geofence_radius_m
         for key, value in _parse_field_toggles(request.form).items():
             setattr(meeting, key, value)
+
+        _apply_questions(meeting, question_texts)
+
         db.session.commit()
 
         flash(f"Meeting '{meeting.title}' updated.", "success")
@@ -389,17 +418,23 @@ def meeting_export(meeting_id):
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["First Name", "Surname", "Email", "Designation", "Department", "ID / Staff No.", "Signed In At"])
+    header = ["First Name", "Surname", "Email", "Designation", "Department", "ID / Staff No."]
+    header += [q.question_text for q in meeting.questions]
+    header += ["Signed In At"]
+    writer.writerow(header)
+
     for r in meeting.attendance_records:
-        writer.writerow([
+        row = [
             r.first_name,
             r.surname,
             r.email or "",
             r.designation or "",
             r.department or "",
             r.id_number or "",
-            r.signed_in_at.strftime("%Y-%m-%d %H:%M:%S") if r.signed_in_at else "",
-        ])
+        ]
+        row += [r.answer_for(q.id) or "" for q in meeting.questions]
+        row += [r.signed_in_at.strftime("%Y-%m-%d %H:%M:%S") if r.signed_in_at else ""]
+        writer.writerow(row)
 
     safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in meeting.title).strip() or "meeting"
     return Response(
@@ -455,6 +490,15 @@ def attend(code):
             if getattr(meeting, f"collect_{field}") and not field_values[field]:
                 missing_labels.append(field_labels[field])
 
+        # Custom questions are always required -- an organizer who bothered
+        # to add one wants every attendee to answer it.
+        question_answers = {}
+        for q in meeting.questions:
+            answer = request.form.get(f"question_{q.id}", "").strip()
+            question_answers[q.id] = answer
+            if not answer:
+                missing_labels.append(q.question_text)
+
         if missing_labels:
             verb = "is" if len(missing_labels) == 1 else "are"
             flash(f"{', '.join(missing_labels)} {verb} required.", "danger")
@@ -496,6 +540,15 @@ def attend(code):
             ip_address=request.remote_addr,
         )
         db.session.add(record)
+        db.session.flush()  # assigns record.id before answers reference it
+
+        for q in meeting.questions:
+            db.session.add(AttendanceAnswer(
+                attendance_record_id=record.id,
+                question_id=q.id,
+                answer_text=question_answers.get(q.id, ""),
+            ))
+
         db.session.commit()
 
         return render_template("meetings/attend_success.html", meeting=meeting, name=first_name)

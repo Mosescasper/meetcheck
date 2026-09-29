@@ -88,6 +88,17 @@
         {% endfor %}
       </tbody>
     </table>
+
+    {% if meeting.questions %}
+    <div style="margin-top:1rem; margin-bottom:1rem;">
+      <h4 style="margin:0 0 .75rem;">Custom Questions</h4>
+      <ul style="margin:0; padding-left:1.1rem; color:var(--text-muted);">
+        {% for q in meeting.questions %}
+        <li>{{ q.question_text }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </div>
 
 </div>

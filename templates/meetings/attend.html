@@ -63,6 +63,13 @@
       </div>
       {% endif %}
 
+      {% for q in meeting.questions %}
+      <div class="form-group">
+        <label for="question_{{ q.id }}">{{ q.question_text }} *</label>
+        <input type="text" id="question_{{ q.id }}" name="question_{{ q.id }}" class="form-control" required>
+      </div>
+      {% endfor %}
+
       {% if meeting.geofence_enabled %}
       <input type="hidden" id="latitude" name="latitude">
       <input type="hidden" id="longitude" name="longitude">
