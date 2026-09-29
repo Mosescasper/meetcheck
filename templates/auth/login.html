@@ -20,12 +20,33 @@
         <input type="email" id="email" name="email" class="form-control" required autofocus>
       </div>
       <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" class="form-control" required>
+          <label for="password">Password</label>
+          <div style="position:relative;">
+            <input type="password" id="password" name="password" class="form-control" required
+                   style="padding-right:2.6rem;">
+            <button type="button" class="pw-toggle" data-target="password"
+                    style="position:absolute; right:.6rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:.85rem; color:var(--text-muted);">Show</button>
+          </div>
+        </div>
+        <p style="text-align:right; margin:-.6rem 0 1rem;">
+          <a href="{{ url_for('forgot_password') }}" style="font-size:.8rem; color:var(--text-muted);">Forgot password?</a>
+        </p>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Log In</button>
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Log In</button>
     </form>
 
+
+  <script>
+  document.querySelectorAll(".pw-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = document.getElementById(btn.dataset.target);
+      var showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      btn.textContent = showing ? "Show" : "Hide";
+    });
+  });
+  </script>
     <p class="auth-switch">No account? <a href="{{ url_for('register') }}">Register</a></p>
   </div>
 </div>

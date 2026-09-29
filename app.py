@@ -148,6 +148,14 @@ def register():
     return render_template("auth/register.html")
 
 
+@app.route("/forgot-password")
+def forgot_password():
+    """No self-serve reset -- organizer accounts are few and known, so a
+    forgotten password is resolved by an admin resetting it directly in
+    the database. This page just points people at who to contact."""
+    return render_template("auth/forgot_password.html", admin_emails=sorted(Config.ACCOUNT_CREATOR_EMAILS))
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
@@ -176,6 +184,37 @@ def logout():
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+@login_required
+def reset_password():
+    """Any logged-in organizer can reset another organizer's password --
+    fine for a small, trusted team of known staff. Used to resolve the
+    "contact an admin" flow from the forgot-password page.
+    """
+    organizers = Organizer.query.order_by(Organizer.name).all()
+
+    if request.method == "POST":
+        organizer_id = request.form.get("organizer_id", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        target = Organizer.query.get(organizer_id)
+        if not target:
+            flash("Select a valid account.", "danger")
+            return render_template("auth/reset_password.html", organizers=organizers)
+
+        if not new_password or new_password != confirm_password:
+            flash("Passwords must match and can't be blank.", "danger")
+            return render_template("auth/reset_password.html", organizers=organizers)
+
+        target.set_password(new_password)
+        db.session.commit()
+        flash(f"Password reset for {target.name} ({target.email}).", "success")
+        return redirect(url_for("meeting_list"))
+
+    return render_template("auth/reset_password.html", organizers=organizers)
 
 
 @app.route("/")
