@@ -70,11 +70,17 @@
         {% for r in meeting.attendance_records %}
         <tr>
           <td>{{ r.full_name }}</td>
-          <td>{{ r.email }}</td>
-          <td>{{ r.designation }}</td>
-          <td>{{ r.department }}</td>
+          <td>{{ r.email or "-" }}</td>
+          <td>{{ r.designation or "-" }}</td>
+          <td>{{ r.department or "-" }}</td>
           <td>{{ r.id_number or "—" }}</td>
-          <td><img src="{{ r.signature }}" alt="Signature" style="height:32px; background:#fff; border-radius:4px;"></td>
+          <td>
+            {% if r.signature %}
+            <img src="{{ r.signature }}" alt="Signature" style="height:32px; background:#fff; border-radius:4px;">
+            {% else %}
+            -
+            {% endif %}
+          </td>
           <td>{{ r.signed_in_at.strftime('%d %b %Y, %H:%M:%S') if r.signed_in_at else "—" }}</td>
         </tr>
         {% else %}

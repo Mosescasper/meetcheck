@@ -34,32 +34,41 @@
         <input type="text" id="surname" name="surname" class="form-control" required>
       </div>
 
+      {% if meeting.collect_email %}
       <div class="form-group">
         <label for="email">Email *</label>
         <input type="email" id="email" name="email" class="form-control" required>
       </div>
+      {% endif %}
 
+      {% if meeting.collect_designation %}
       <div class="form-group">
         <label for="designation">Designation *</label>
         <input type="text" id="designation" name="designation" class="form-control" required
                placeholder="e.g. Pharmacist, Nurse, Clerk">
       </div>
+      {% endif %}
 
+      {% if meeting.collect_department %}
       <div class="form-group">
         <label for="department">Department *</label>
         <input type="text" id="department" name="department" class="form-control" required>
       </div>
+      {% endif %}
 
+      {% if meeting.collect_id_number %}
       <div class="form-group">
         <label for="id_number">ID / Staff No. *</label>
         <input type="text" id="id_number" name="id_number" class="form-control" required>
       </div>
+      {% endif %}
 
       {% if meeting.geofence_enabled %}
       <input type="hidden" id="latitude" name="latitude">
       <input type="hidden" id="longitude" name="longitude">
       {% endif %}
 
+      {% if meeting.collect_signature %}
       <div class="form-group">
         <label>Signature *</label>
         <div style="border:1px solid var(--border); border-radius:8px; background:#fff; touch-action:none;">
@@ -71,6 +80,7 @@
         </div>
         <input type="hidden" id="signature" name="signature" required>
       </div>
+      {% endif %}
 
       <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
         Mark Me Present

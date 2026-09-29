@@ -84,6 +84,28 @@ def _parse_geofence_form(form):
     return True, lat, lng, radius
 
 
+# The optional fields an organizer can turn on/off per meeting. Keys match
+# the checkbox `name` in the form and the Meeting column name.
+OPTIONAL_ATTEND_FIELDS = ["email", "designation", "department", "id_number", "signature"]
+
+
+def _parse_field_toggles(form):
+    """Reads which optional fields this meeting's check-in form should
+    collect. Returns a dict like {"collect_email": True, ...}."""
+    return {f"collect_{field}": form.get(f"collect_{field}") == "on" for field in OPTIONAL_ATTEND_FIELDS}
+
+
+def _parse_optional_fields(form):
+    """Returns the per-meeting optional attendance-field settings."""
+    return {
+        "collect_email": form.get("collect_email") == "on",
+        "collect_designation": form.get("collect_designation") == "on",
+        "collect_department": form.get("collect_department") == "on",
+        "collect_id_number": form.get("collect_id_number") == "on",
+        "collect_signature": form.get("collect_signature") == "on",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Organizer auth
 # ---------------------------------------------------------------------------
@@ -198,6 +220,8 @@ def meeting_new():
             flash(str(e), "danger")
             return render_template("meetings/new.html")
 
+        optional_fields = _parse_optional_fields(request.form)
+
         scheduled_for_val = None
         if scheduled_for_str:
             try:
@@ -214,6 +238,7 @@ def meeting_new():
             geofence_lat=geofence_lat,
             geofence_lng=geofence_lng,
             geofence_radius_m=geofence_radius_m,
+            **_parse_field_toggles(request.form),
         )
         db.session.add(meeting)
         db.session.commit()
@@ -259,6 +284,8 @@ def meeting_edit(meeting_id):
             flash(str(e), "danger")
             return render_template("meetings/edit.html", meeting=meeting)
 
+        optional_fields = _parse_optional_fields(request.form)
+
         scheduled_for_val = None
         if scheduled_for_str:
             try:
@@ -273,6 +300,8 @@ def meeting_edit(meeting_id):
         meeting.geofence_lat = geofence_lat
         meeting.geofence_lng = geofence_lng
         meeting.geofence_radius_m = geofence_radius_m
+        for key, value in _parse_field_toggles(request.form).items():
+            setattr(meeting, key, value)
         db.session.commit()
 
         flash(f"Meeting '{meeting.title}' updated.", "success")
@@ -324,7 +353,11 @@ def meeting_export(meeting_id):
     writer.writerow(["First Name", "Surname", "Email", "Designation", "Department", "ID / Staff No.", "Signed In At"])
     for r in meeting.attendance_records:
         writer.writerow([
-            r.first_name, r.surname, r.email, r.designation, r.department,
+            r.first_name,
+            r.surname,
+            r.email or "",
+            r.designation or "",
+            r.department or "",
             r.id_number or "",
             r.signed_in_at.strftime("%Y-%m-%d %H:%M:%S") if r.signed_in_at else "",
         ])
@@ -355,17 +388,37 @@ def attend(code):
 
         first_name = request.form.get("first_name", "").strip()
         surname = request.form.get("surname", "").strip()
-        email = request.form.get("email", "").strip()
-        designation = request.form.get("designation", "").strip()
-        department = request.form.get("department", "").strip()
-        id_number = request.form.get("id_number", "").strip()
-        signature = request.form.get("signature", "").strip()
+        email = request.form.get("email", "").strip() if meeting.collect_email else ""
+        designation = request.form.get("designation", "").strip() if meeting.collect_designation else ""
+        department = request.form.get("department", "").strip() if meeting.collect_department else ""
+        id_number = request.form.get("id_number", "").strip() if meeting.collect_id_number else ""
+        signature = request.form.get("signature", "").strip() if meeting.collect_signature else ""
         lat_str = request.form.get("latitude", "").strip()
         lng_str = request.form.get("longitude", "").strip()
 
-        missing = not all([first_name, surname, email, designation, department, id_number, signature])
-        if missing:
-            flash("First name, surname, email, designation, department, ID / Staff No., and signature are all required.", "danger")
+        field_values = {
+            "email": email,
+            "designation": designation,
+            "department": department,
+            "id_number": id_number,
+            "signature": signature,
+        }
+        field_labels = {
+            "email": "Email",
+            "designation": "Designation",
+            "department": "Department",
+            "id_number": "ID/Staff No.",
+            "signature": "Signature",
+        }
+
+        missing_labels = ["First name", "Surname"] if not (first_name and surname) else []
+        for field in OPTIONAL_ATTEND_FIELDS:
+            if getattr(meeting, f"collect_{field}") and not field_values[field]:
+                missing_labels.append(field_labels[field])
+
+        if missing_labels:
+            verb = "is" if len(missing_labels) == 1 else "are"
+            flash(f"{', '.join(missing_labels)} {verb} required.", "danger")
             return render_template("meetings/attend.html", meeting=meeting)
 
         latitude = longitude = None
@@ -394,11 +447,11 @@ def attend(code):
             meeting_id=meeting.id,
             first_name=first_name,
             surname=surname,
-            email=email,
-            designation=designation,
-            department=department,
-            id_number=id_number,
-            signature=signature,
+            email=email if meeting.collect_email else None,
+            designation=designation if meeting.collect_designation else None,
+            department=department if meeting.collect_department else None,
+            id_number=id_number if meeting.collect_id_number else None,
+            signature=signature if meeting.collect_signature else None,
             latitude=latitude,
             longitude=longitude,
             ip_address=request.remote_addr,

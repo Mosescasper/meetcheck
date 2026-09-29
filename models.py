@@ -54,6 +54,14 @@ class Meeting(db.Model):
     geofence_lng = db.Column(db.Float)
     geofence_radius_m = db.Column(db.Integer, nullable=False, default=150)
 
+    # Which optional fields this meeting's check-in form asks for.
+    # First name and surname are always collected and always required.
+    collect_email = db.Column(db.Boolean, nullable=False, default=True)
+    collect_designation = db.Column(db.Boolean, nullable=False, default=True)
+    collect_department = db.Column(db.Boolean, nullable=False, default=True)
+    collect_id_number = db.Column(db.Boolean, nullable=False, default=True)
+    collect_signature = db.Column(db.Boolean, nullable=False, default=True)
+
     organizer = db.relationship("Organizer", back_populates="meetings")
     attendance_records = db.relationship(
         "AttendanceRecord", back_populates="meeting",
@@ -75,11 +83,11 @@ class AttendanceRecord(db.Model):
     meeting_id = db.Column(db.Integer, db.ForeignKey("meetings.id"), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     surname = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(150), nullable=False)
-    designation = db.Column(db.String(150), nullable=False)
-    department = db.Column(db.String(150), nullable=False)
-    id_number = db.Column(db.String(50), nullable=False)
-    signature = db.Column(db.Text, nullable=False)  # base64 PNG data URL from the signature pad
+    email = db.Column(db.String(150))
+    designation = db.Column(db.String(150))
+    department = db.Column(db.String(150))
+    id_number = db.Column(db.String(50))
+    signature = db.Column(db.Text)  # base64 PNG data URL from the signature pad
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     signed_in_at = db.Column(db.DateTime, default=datetime.utcnow)
