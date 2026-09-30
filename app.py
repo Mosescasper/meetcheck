@@ -96,13 +96,14 @@ def _parse_field_toggles(form):
 
 
 def _parse_optional_fields(form):
-    """Returns the per-meeting optional attendance-field settings."""
+    """Returns the per-meeting optional attendance-field settings.
+    All fields are now mandatory."""
     return {
-        "collect_email": form.get("collect_email") == "on",
-        "collect_designation": form.get("collect_designation") == "on",
-        "collect_department": form.get("collect_department") == "on",
-        "collect_id_number": form.get("collect_id_number") == "on",
-        "collect_signature": form.get("collect_signature") == "on",
+        "collect_email": True,
+        "collect_designation": True,
+        "collect_department": True,
+        "collect_id_number": True,
+        "collect_signature": True,
     }
 
 
