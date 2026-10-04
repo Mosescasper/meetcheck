@@ -26,6 +26,9 @@ class Config:
 
     ORG_NAME = os.environ.get("ORG_NAME", "MeetCheck")
 
+    # Only this email can reset other organizers' passwords.
+    SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "").strip().lower()
+
     # Comma-separated list of email addresses allowed to self-register an
     # organizer account at /register (e.g. "admin@mkrh.go.ke,it@mkrh.go.ke").
     # Same pattern as SupplyLink/Afya Link's ACCOUNT_CREATOR_EMAILS. If this

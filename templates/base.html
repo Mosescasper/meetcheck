@@ -75,7 +75,9 @@
     <nav style="display:flex; flex-direction:column; gap:.15rem; flex:1;">
       <a class="nav-link {{ 'active' if request.endpoint and 'meeting' in request.endpoint else '' }}" href="{{ url_for('meeting_list') }}">📋 Meetings</a>
       <a class="nav-link" href="{{ url_for('meeting_new') }}">➕ New Meeting</a>
+      {% if is_super_admin %}
       <a class="nav-link {{ 'active' if request.endpoint == 'reset_password' else '' }}" href="{{ url_for('reset_password') }}">🔑 Reset Password</a>
+      {% endif %}
     </nav>
     <div class="sidebar-footer">
       <div class="user-chip">{{ current_user.name }}</div>

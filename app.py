@@ -36,7 +36,11 @@ def load_user(user_id):
 
 @app.context_processor
 def inject_org_name():
-    return dict(org_name=Config.ORG_NAME)
+    is_super_admin = (
+        current_user.is_authenticated
+        and current_user.email.lower() == Config.SUPER_ADMIN_EMAIL
+    )
+    return dict(org_name=Config.ORG_NAME, is_super_admin=is_super_admin)
 
 
 def _public_base_url():
@@ -210,10 +214,11 @@ def logout():
 @app.route("/reset-password", methods=["GET", "POST"])
 @login_required
 def reset_password():
-    """Any logged-in organizer can reset another organizer's password --
-    fine for a small, trusted team of known staff. Used to resolve the
-    "contact an admin" flow from the forgot-password page.
-    """
+    """Only Config.SUPER_ADMIN_EMAIL can reset organizer passwords."""
+    if current_user.email.lower() != Config.SUPER_ADMIN_EMAIL:
+        flash("You don't have permission to reset passwords.", "danger")
+        return redirect(url_for("meeting_list"))
+
     organizers = Organizer.query.order_by(Organizer.name).all()
 
     if request.method == "POST":
