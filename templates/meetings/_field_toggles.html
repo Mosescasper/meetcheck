@@ -1,62 +1,38 @@
+{# Shared field list, included from meetings/new.html and meetings/edit.html.
+   These fields are always mandatory at check-in, so the checkboxes are
+   display-only; hidden inputs keep the form submitting them as "on". #}
 <div class="form-group" style="border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem;">
-  <label style="display:block; font-weight:600; margin-bottom:.75rem;">Optional check-in details</label>
-  <div style="display:grid; gap:.5rem;">
-    <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="collect_email" {% if not meeting or meeting.collect_email %}checked{% endif %} style="width:auto;">
-      Collect email
-    </label>
-    <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="collect_designation" {% if not meeting or meeting.collect_designation %}checked{% endif %} style="width:auto;">
-      Collect designation
-    </label>
-    <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="collect_department" {% if not meeting or meeting.collect_department %}checked{% endif %} style="width:auto;">
-      Collect department
-    </label>
-    <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="collect_id_number" {% if not meeting or meeting.collect_id_number %}checked{% endif %} style="width:auto;">
-      Collect ID / staff number
-    </label>
-    <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="collect_signature" {% if not meeting or meeting.collect_signature %}checked{% endif %} style="width:auto;">
-      Collect signature
-    </label>
-  </div>
-</div>
-{# Shared field-toggle checkboxes, included from meetings/new.html and
-   meetings/edit.html. Expects an optional `meeting` variable (present on
-   edit, absent on new -- on new, everything defaults to checked). #}
-<div class="form-group" style="border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem;">
-  <label style="display:block; margin-bottom:.5rem;">Fields to collect at check-in</label>
+  <label style="display:block; margin-bottom:.5rem;">Fields collected at check-in</label>
   <p style="font-size:.78rem; color:var(--text-muted); margin:0 0 .6rem;">
-    First Name and Surname are always collected. Turn off anything you don't need for this meeting.
+    First Name, Surname, Email, Designation, Department, ID/Staff No., and Signature are always mandatory at check-in.
   </p>
 
   <div style="display:flex; flex-direction:column; gap:.4rem;">
-    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-weight:normal;">
-      <input type="checkbox" name="collect_email" style="width:auto;"
-             {% if not meeting or meeting.collect_email %}checked{% endif %}>
-      Email
+    <label style="display:flex; align-items:center; gap:.5rem; cursor:not-allowed; font-weight:normal; opacity:0.6;">
+      <input type="checkbox" checked disabled style="width:auto;">
+      Email <span style="font-size:.75rem; color:var(--text-muted);">(mandatory)</span>
     </label>
-    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-weight:normal;">
-      <input type="checkbox" name="collect_designation" style="width:auto;"
-             {% if not meeting or meeting.collect_designation %}checked{% endif %}>
-      Designation
+    <label style="display:flex; align-items:center; gap:.5rem; cursor:not-allowed; font-weight:normal; opacity:0.6;">
+      <input type="checkbox" checked disabled style="width:auto;">
+      Designation <span style="font-size:.75rem; color:var(--text-muted);">(mandatory)</span>
     </label>
-    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-weight:normal;">
-      <input type="checkbox" name="collect_department" style="width:auto;"
-             {% if not meeting or meeting.collect_department %}checked{% endif %}>
-      Department
+    <label style="display:flex; align-items:center; gap:.5rem; cursor:not-allowed; font-weight:normal; opacity:0.6;">
+      <input type="checkbox" checked disabled style="width:auto;">
+      Department <span style="font-size:.75rem; color:var(--text-muted);">(mandatory)</span>
     </label>
-    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-weight:normal;">
-      <input type="checkbox" name="collect_id_number" style="width:auto;"
-             {% if not meeting or meeting.collect_id_number %}checked{% endif %}>
-      ID / Staff No.
+    <label style="display:flex; align-items:center; gap:.5rem; cursor:not-allowed; font-weight:normal; opacity:0.6;">
+      <input type="checkbox" checked disabled style="width:auto;">
+      ID / Staff No. <span style="font-size:.75rem; color:var(--text-muted);">(mandatory)</span>
     </label>
-    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-weight:normal;">
-      <input type="checkbox" name="collect_signature" style="width:auto;"
-             {% if not meeting or meeting.collect_signature %}checked{% endif %}>
-      Signature
+    <label style="display:flex; align-items:center; gap:.5rem; cursor:not-allowed; font-weight:normal; opacity:0.6;">
+      <input type="checkbox" checked disabled style="width:auto;">
+      Signature <span style="font-size:.75rem; color:var(--text-muted);">(mandatory)</span>
     </label>
   </div>
+
+  <input type="hidden" name="collect_email" value="on">
+  <input type="hidden" name="collect_designation" value="on">
+  <input type="hidden" name="collect_department" value="on">
+  <input type="hidden" name="collect_id_number" value="on">
+  <input type="hidden" name="collect_signature" value="on">
 </div>

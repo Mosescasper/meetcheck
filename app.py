@@ -468,11 +468,11 @@ def attend(code):
 
         first_name = request.form.get("first_name", "").strip()
         surname = request.form.get("surname", "").strip()
-        email = request.form.get("email", "").strip() if meeting.collect_email else ""
-        designation = request.form.get("designation", "").strip() if meeting.collect_designation else ""
-        department = request.form.get("department", "").strip() if meeting.collect_department else ""
-        id_number = request.form.get("id_number", "").strip() if meeting.collect_id_number else ""
-        signature = request.form.get("signature", "").strip() if meeting.collect_signature else ""
+        email = request.form.get("email", "").strip()
+        designation = request.form.get("designation", "").strip()
+        department = request.form.get("department", "").strip()
+        id_number = request.form.get("id_number", "").strip()
+        signature = request.form.get("signature", "").strip()
         lat_str = request.form.get("latitude", "").strip()
         lng_str = request.form.get("longitude", "").strip()
 
@@ -491,9 +491,10 @@ def attend(code):
             "signature": "Signature",
         }
 
+        # These fields are now always mandatory
         missing_labels = ["First name", "Surname"] if not (first_name and surname) else []
         for field in OPTIONAL_ATTEND_FIELDS:
-            if getattr(meeting, f"collect_{field}") and not field_values[field]:
+            if not field_values[field]:
                 missing_labels.append(field_labels[field])
 
         # Custom questions are always required -- an organizer who bothered
@@ -536,11 +537,11 @@ def attend(code):
             meeting_id=meeting.id,
             first_name=first_name,
             surname=surname,
-            email=email if meeting.collect_email else None,
-            designation=designation if meeting.collect_designation else None,
-            department=department if meeting.collect_department else None,
-            id_number=id_number if meeting.collect_id_number else None,
-            signature=signature if meeting.collect_signature else None,
+            email=email,
+            designation=designation,
+            department=department,
+            id_number=id_number,
+            signature=signature,
             latitude=latitude,
             longitude=longitude,
             ip_address=request.remote_addr,
